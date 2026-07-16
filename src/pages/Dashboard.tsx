@@ -35,15 +35,20 @@ const Dashboard: React.FC = () => {
   // Filter States
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [appliedStartDate, setAppliedStartDate] = useState("");
+  const [appliedEndDate, setAppliedEndDate] = useState("");
 
-  const fetchDashboardData = async () => {
+  const isCompleteDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const canApplyDateFilter = isCompleteDate(startDate) && isCompleteDate(endDate);
+
+  const fetchDashboardData = async (filters = { startDate: appliedStartDate, endDate: appliedEndDate }) => {
     try {
       setLoading(true);
       setError(null);
       let url = "/dashboard/summary";
       const params = new URLSearchParams();
-      if (startDate) params.append("startDate", startDate);
-      if (endDate) params.append("endDate", endDate);
+      if (filters.startDate) params.append("startDate", filters.startDate);
+      if (filters.endDate) params.append("endDate", filters.endDate);
       
       const queryStr = params.toString();
       if (queryStr) url += `?${queryStr}`;
@@ -58,12 +63,26 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [startDate, endDate]);
+    fetchDashboardData({ startDate: "", endDate: "" });
+  }, []);
+
+  const applyDateFilter = () => {
+    if (!canApplyDateFilter) {
+      setError("Please choose a complete start date and end date.");
+      return;
+    }
+
+    setAppliedStartDate(startDate);
+    setAppliedEndDate(endDate);
+    fetchDashboardData({ startDate, endDate });
+  };
 
   const resetFilters = () => {
     setStartDate("");
     setEndDate("");
+    setAppliedStartDate("");
+    setAppliedEndDate("");
+    fetchDashboardData({ startDate: "", endDate: "" });
   };
 
   // Helper to format currency
@@ -94,7 +113,7 @@ const Dashboard: React.FC = () => {
             <span>Add Transaction</span>
           </Link>
           <button
-            onClick={fetchDashboardData}
+            onClick={() => fetchDashboardData()}
             className="p-2.5 text-slate-500 hover:text-slate-800 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
             title="Refresh statistics"
             id="refresh-dash-btn"
@@ -131,6 +150,14 @@ const Dashboard: React.FC = () => {
               id="dash-end-date"
             />
           </div>
+          <button
+            onClick={applyDateFilter}
+            disabled={!canApplyDateFilter || loading}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 transition-colors"
+            id="dash-apply-dates"
+          >
+            Apply
+          </button>
           {(startDate || endDate) && (
             <button
               onClick={resetFilters}

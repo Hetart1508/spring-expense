@@ -49,6 +49,10 @@ const Transactions: React.FC = () => {
   const [deleteName, setDeleteName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const filteredCategories = type
+    ? categories.filter((category) => category.type === type)
+    : categories;
+
   // Debounce search query
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -70,6 +74,16 @@ const Transactions: React.FC = () => {
     };
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (!categoryId) return;
+
+    const selectedCategory = categories.find((category) => category.id.toString() === categoryId);
+    if (type && selectedCategory?.type !== type) {
+      setCategoryId("");
+      setPage(0);
+    }
+  }, [type, categoryId, categories]);
 
   // Fetch paginated transactions
   const fetchTransactions = async () => {
@@ -227,7 +241,7 @@ const Transactions: React.FC = () => {
             <select
               className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 bg-white"
               value={type}
-              onChange={(e) => { setType(e.target.value); setPage(0); }}
+              onChange={(e) => { setType(e.target.value); setCategoryId(""); setPage(0); }}
               id="filter-type-select"
             >
               <option value="">All Types</option>
@@ -245,7 +259,7 @@ const Transactions: React.FC = () => {
               id="filter-category-select"
             >
               <option value="">All Categories</option>
-              {categories.map((c) => (
+              {filteredCategories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.type})
                 </option>
