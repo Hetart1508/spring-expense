@@ -186,9 +186,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             >
               <Menu className="h-6 w-6" />
             </button>
-            <div className="hidden md:block text-sm text-slate-500 font-medium">
-              Welcome back, <span className="text-indigo-600 font-semibold">{user?.name}</span>!
-            </div>
           </div>
 
           <div className="flex items-center gap-4">

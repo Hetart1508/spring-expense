@@ -4,7 +4,7 @@ import api from "../api";
 import { User, ShieldCheck, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 
 const Profile: React.FC = () => {
-  const { user, refreshUser } = useAuth();
+  const { user, updateUser } = useAuth();
 
   // Name Update Form
   const [name, setName] = useState(user?.name || "");
@@ -29,9 +29,9 @@ const Profile: React.FC = () => {
 
     try {
       setNameLoading(true);
-      await api.put("/profile", { name });
+      const res = await api.put("/profile", { name });
       setNameMessage({ type: "success", text: "Profile display name updated successfully!" });
-      await refreshUser();
+      updateUser(res.data);
     } catch (err: any) {
       setNameMessage({ type: "error", text: err.response?.data?.message || "Failed to update name." });
     } finally {

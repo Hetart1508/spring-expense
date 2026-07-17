@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 import api from "../api";
 import { User } from "../types";
 
@@ -9,40 +9,51 @@ interface AuthContextType {
   login: (name: string, password: string) => Promise<User>;
   register: (name: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  updateUser: (user: User) => void;
   clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AUTH_USER_KEY = "java_expense_user";
+
+const getStoredUser = (): User | null => {
+  const storedUser = localStorage.getItem(AUTH_USER_KEY);
+
+  if (!storedUser) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(storedUser) as User;
+  } catch {
+    localStorage.removeItem(AUTH_USER_KEY);
+    return null;
+  }
+};
+
+const storeUser = (user: User | null) => {
+  if (user) {
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(AUTH_USER_KEY);
+  }
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCurrentUser = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get<User>("/auth/me");
-      setUser(res.data);
-      setError(null);
-    } catch (err: any) {
-      // It's normal to fail on startup if the user is unauthenticated
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+  const updateUser = (nextUser: User) => {
+    setUser(nextUser);
+    storeUser(nextUser);
   };
-
-  useEffect(() => {
-    fetchCurrentUser();
-  }, []);
 
   const login = async (name: string, password: string): Promise<User> => {
     try {
       setError(null);
       const res = await api.post<User>("/auth/login", { name, password });
-      setUser(res.data);
+      updateUser(res.data);
       return res.data;
     } catch (err: any) {
       const msg = err.response?.data?.message || "Invalid username or password";
@@ -70,15 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Logout failed on server side, clearing local state", err);
     } finally {
       setUser(null);
-    }
-  };
-
-  const refreshUser = async () => {
-    try {
-      const res = await api.get<User>("/auth/me");
-      setUser(res.data);
-    } catch (err) {
-      setUser(null);
+      storeUser(null);
     }
   };
 
@@ -93,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
-        refreshUser,
+        updateUser,
         clearError,
       }}
     >
